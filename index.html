@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brand Generator and Mutator</title>
+    <style>
+        :root {
+            --primary: #4a4e69;
+            --secondary: #9a8c98;
+            --accent: #c9ada7;
+            --background: #f2e9e4;
+            --text: #22223b;
+            --mutation: #a8dadc;
+            --chosen: #f4a261;
+            --both: #90be6d;
+            --mutated-background: #ffd6ba;
+        }
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .content {
+            flex: 1 0 auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: var(--secondary);
+        }
+        input {
+            padding: 5px;
+            border: 1px solid var(--secondary);
+            border-radius: 5px;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .input-label {
+            font-size: 0.8em;
+            margin-bottom: 2px;
+            color: var(--secondary);
+        }
+        .word-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .word {
+            background-color: var(--accent);
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .storage {
+            background-color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            width: 100%;
+            max-width: 600px;
+        }
+        .storage h3 {
+            margin-top: 0;
+        }
+        .storage-words {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        .storage-word {
+            color: white;
+            padding: 5px 10px;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .storage-word[data-storage="mutation"] {
+            background-color: var(--mutation);
+        }
+        .storage-word[data-storage="chosen"] {
+            background-color: var(--chosen);
+        }
+        .remove-word {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            margin-left: 5px;
+            cursor: pointer;
+            font-size: 0.8em;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        .mutated-word {
+            background-color: var(--mutated-background);
+            color: var(--text);
+            padding: 5px;
+            border-radius: 3px;
+            margin-left: 5px;
+        }
+        .context-menu {
+            position: absolute;
+            background-color: white;
+            border: 1px solid var(--secondary);
+            border-radius: 5px;
+            padding: 5px 0;
+            z-index: 1000;
+        }
+        .context-menu button {
+            display: block;
+            width: 100%;
+            padding: 5px 10px;
+            text-align: left;
+            background: none;
+            border: none;
+            color: var(--text);
+        }
+        .context-menu button:hover {
+            background-color: var(--background);
+        }
+        #storageModal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 600px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        #darkModeToggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+        }
+        .footer {
+            flex-shrink: 0;
+            padding: 10px;
+            text-align: center;
+            font-size: 0.9em;
+            color: var(--text);
+            background-color: var(--background);
+        }
+        .footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        body.dark-mode {
+            --primary: #bb86fc;
+            --secondary: #03dac6;
+            --accent: #cf6679;
+            --background: #121212;
+            --text: #e0e0e0;
+            --mutation: #3700b3;
+            --chosen: #9c4700;
+            --both: #2e7d32;
+            --mutated-background: #4a4a4a;
+        }
+        .dark-mode .storage {
+            background-color: #1e1e1e;
+        }
+        .dark-mode .context-menu {
+            background-color: #1e1e1e;
+        }
+        .dark-mode .modal-content {
+            background-color: #1e1e1e;
+        }
+        .dark-mode .close {
+            color: #e0e0e0;
+        }
+        .dark-mode .close:hover,
+        .dark-mode .close:focus {
+            color: #ffffff;
+        }
+        .copy-text {
+            font-size: 0.8em;
+            color: var(--secondary);
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        .copy-text:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="content">
+        <button id="darkModeToggle">☀️</button>
+        <div class="controls">
+            <div class="input-group">
+                <span class="input-label">Min Syllables</span>
+                <input type="number" id="minSyllables" min="1" max="5" value="2" placeholder="Min syllables">
+            </div>
+            <div class="input-group">
+                <span class="input-label">Max Syllables</span>
+                <input type="number" id="maxSyllables" min="1" max="5" value="3" placeholder="Max syllables">
+            </div>
+            <div class="input-group">
+                <span class="input-label">Word Count</span>
+                <input type="number" id="wordCount" min="1" max="20" value="10" placeholder="Word count">
+            </div>
+            <button id="generateBtn">Generate Words</button>
+            <button id="mutateBtn">Mutate Words</button>
+            <div class="input-group">
+                <span class="input-label">Mutations per Word</span>
+                <input type="number" id="mutationCount" min="1" max="5" value="1" placeholder="Mutation count">
+            </div>
+        </div>
+        <div id="wordContainer" class="word-container"></div>
+        <div id="forMutationStorage" class="storage">
+            <h3>For Mutation</h3>
+            <div id="forMutationWords" class="storage-words"></div>
+        </div>
+        <div id="chosenStorage" class="storage">
+            <h3>Chosen</h3>
+            <div id="chosenWords" class="storage-words"></div>
+        </div>
+        <button id="showStorageBtn">Show Storage</button>
+
+        <div id="contextMenu" class="context-menu" style="display: none;">
+            <button id="addToMutation">Add to Mutation</button>
+            <button id="addToChosen">Add to Chosen</button>
+            <button id="addToBoth">Add to Both</button>
+        </div>
+
+        <div id="storageModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>Storage Contents</h2>
+                <h3>For Mutation: <span class="copy-text" onclick="copyToClipboard('forMutationContent')">copy</span></h3>
+                <p id="forMutationContent"></p>
+                <h3>Chosen: <span class="copy-text" onclick="copyToClipboard('chosenContent')">copy</span></h3>
+                <p id="chosenContent"></p>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <a href="https://github.com/dobrosketchkun/brandutator.github.io" target="_blank">View on GitHub</a>
+    </footer>
+
+    <script>
+        const vowels = 'aeiou';
+        const consonants = 'bcdfghjklmnpqrstvwxyz';
+
+        function randomChar(chars) {
+            return chars[Math.floor(Math.random() * chars.length)];
+        }
+
+        function generateSyllable() {
+            const patterns = ['CV', 'CVC', 'V', 'VC'];
+            const pattern = patterns[Math.floor(Math.random() * patterns.length)];
+            return pattern.split('').map(char => char === 'C' ? randomChar(consonants) : randomChar(vowels)).join('');
+        }
+
+        function generateWord(minSyllables, maxSyllables) {
+            const syllableCount = Math.floor(Math.random() * (maxSyllables - minSyllables + 1)) + minSyllables;
+            return Array(syllableCount).fill().map(() => generateSyllable()).join('');
+        }
+
+        function mutateWord(word) {
+            const index = Math.floor(Math.random() * word.length);
+            const isVowel = vowels.includes(word[index]);
+            const newChar = randomChar(isVowel ? vowels : consonants);
+            return word.slice(0, index) + newChar + word.slice(index + 1);
+        }
+
+        const wordContainer = document.getElementById('wordContainer');
+        const forMutationWords = document.getElementById('forMutationWords');
+        const chosenWords = document.getElementById('chosenWords');
+        const contextMenu = document.getElementById('contextMenu');
+        const modal = document.getElementById('storageModal');
+        const closeBtn = document.getElementsByClassName('close')[0];
+
+        function createWordElement(word) {
+            const wordElement = document.createElement('div');
+            wordElement.classList.add('word');
+            wordElement.textContent = word;
+            wordElement.addEventListener('click', () => addToStorage(forMutationWords, word, 'mutation'));
+            wordElement.addEventListener('contextmenu', (e) => showContextMenu(e, word));
+            return wordElement;
+        }
+
+        function showContextMenu(e, word) {
+            e.preventDefault();
+            contextMenu.style.display = 'block';
+            contextMenu.style.left = `${e.pageX}px`;
+            contextMenu.style.top = `${e.pageY}px`;
+
+            document.getElementById('addToMutation').onclick = () => {
+                addToStorage(forMutationWords, word, 'mutation');
+                hideContextMenu();
+            };
+            document.getElementById('addToChosen').onclick = () => {
+                addToStorage(chosenWords, word, 'chosen');
+                hideContextMenu();
+            };
+            document.getElementById('addToBoth').onclick = () => {
+                addToStorage(forMutationWords, word, 'mutation');
+                addToStorage(chosenWords, word, 'chosen');
+                hideContextMenu();
+            };
+        }
+
+        function hideContextMenu() {
+            contextMenu.style.display = 'none';
+        }
+
+        document.addEventListener('click', hideContextMenu);
+
+        function addToStorage(storage, word, storageType) {
+            if (!storage.querySelector(`[data-word="${word}"]`)) {
+                const wordElement = document.createElement('div');
+                wordElement.classList.add('storage-word');
+                wordElement.setAttribute('data-word', word);
+                wordElement.setAttribute('data-storage', storageType);
+                wordElement.innerHTML = `
+                    ${word}
+                    <button class="remove-word" onclick="removeFromStorage(this.parentNode.parentNode, '${word}')">×</button>
+                `;
+                wordElement.addEventListener('contextmenu', (e) => showContextMenu(e, word));
+                storage.appendChild(wordElement);
+            }
+            updateWordColor(word);
+        }
+
+        function removeFromStorage(storage, word) {
+            const wordElement = storage.querySelector(`[data-word="${word}"]`);
+            if (wordElement) {
+                storage.removeChild(wordElement);
+            }
+            updateWordColor(word);
+        }
+
+        function updateWordColor(word) {
+            const wordElements = document.querySelectorAll('.word, .storage-word');
+            wordElements.forEach(element => {
+                if (element.textContent.trim() === word) {
+                    const inMutation = forMutationWords.querySelector(`[data-word="${word}"]`);
+                    const inChosen = chosenWords.querySelector(`[data-word="${word}"]`);
+                    if (inMutation && inChosen) {
+                        element.style.backgroundColor = 'var(--both)';
+                        element.style.color = 'white';
+                    } else if (inMutation) {
+                        element.style.backgroundColor = 'var(--mutation)';
+                        element.style.color = 'white';
+                    } else if (inChosen) {
+                        element.style.backgroundColor = 'var(--chosen)';
+                        element.style.color = 'white';
+                    } else {
+                        element.style.backgroundColor = '';
+                        element.style.color = '';
+                    }
+                }
+            });
+        }
+
+        document.getElementById('generateBtn').addEventListener('click', () => {
+            const minSyllables = parseInt(document.getElementById('minSyllables').value);
+            const maxSyllables = parseInt(document.getElementById('maxSyllables').value);
+            const wordCount = parseInt(document.getElementById('wordCount').value);
+
+            wordContainer.innerHTML = '';
+            for (let i = 0; i < wordCount; i++) {
+                const word = generateWord(minSyllables, maxSyllables);
+                wordContainer.appendChild(createWordElement(word));
+            }
+        });
+
+        document.getElementById('mutateBtn').addEventListener('click', () => {
+            const mutationCount = parseInt(document.getElementById('mutationCount').value);
+            const wordsToMutate = Array.from(forMutationWords.children).map(el => el.getAttribute('data-word'));
+
+            wordContainer.innerHTML = '';
+            wordsToMutate.forEach(word => {
+                const wordElement = createWordElement(word);
+                wordContainer.appendChild(wordElement);
+
+                for (let i = 0; i < mutationCount; i++) {
+                    const mutatedWord = mutateWord(word);
+                    const mutatedElement = document.createElement('div');
+                    mutatedElement.classList.add('word', 'mutated-word');
+                    mutatedElement.textContent = mutatedWord;
+                    mutatedElement.addEventListener('click', () => addToStorage(forMutationWords, mutatedWord, 'mutation'));
+                    mutatedElement.addEventListener('contextmenu', (e) => showContextMenu(e, mutatedWord));
+                    wordContainer.appendChild(mutatedElement);
+                }
+            });
+        });
+
+        document.getElementById('showStorageBtn').addEventListener('click', () => {
+            const forMutationContent = Array.from(forMutationWords.children).map(el => el.getAttribute('data-word')).join(', ');
+            const chosenContent = Array.from(chosenWords.children).map(el => el.getAttribute('data-word')).join(', ');
+            
+            document.getElementById('forMutationContent').textContent = forMutationContent;
+            document.getElementById('chosenContent').textContent = chosenContent;
+            
+            modal.style.display = 'block';
+        });
+
+        closeBtn.onclick = function() {
+            modal.style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Dark mode toggle
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        darkModeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            darkModeToggle.textContent = document.body.classList.contains('dark-mode') ? '🌙' : '☀️';
+        });
+
+        // Copy to clipboard function
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const copyText = element.previousElementSibling.querySelector('.copy-text');
+                copyText.textContent = 'copied!';
+                setTimeout(() => {
+                    copyText.textContent = 'copy';
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>
